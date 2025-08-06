@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import List
 
+
 def clean_column_names(df: pd.DataFrame) -> pd.DataFrame:
     """
     Normalizes column names by stripping whitespace, converting to lowercase,
@@ -104,7 +105,9 @@ def run_cleaning_pipeline(df: pd.DataFrame) -> pd.DataFrame:
     initial_rows = len(df_clean)
     df_clean = handle_missing_values(df_clean)
     rows_removed = initial_rows - len(df_clean)
-    print(f"Step 6/6: Handled missing values. Removed {rows_removed} critical null rows.")
+    print(
+        f"Step 6/6: Handled missing values. Removed {rows_removed} critical null rows."
+    )
 
     print("\nData cleaning pipeline finished successfully.")
     return df_clean
