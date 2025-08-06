@@ -1,40 +1,51 @@
 import pandas as pd
 from typing import List
+from unidecode import unidecode
+import re
 
 
 def clean_column_names(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Normalizes column names by stripping whitespace, converting to lowercase,
-    and replacing non-alphanumeric characters with underscores.
+    Normalizes column names to be valid Python identifiers.
+    Applies unidecode, converts to lowercase, and replaces invalid characters
+    with a single underscore.
     """
-    df.columns = (
-        df.columns.str.strip()
-        .str.lower()
-        .str.replace(" ", "_")
-        .str.replace(r"[^A-Za-z0-9_]", "", regex=True)
-    )
+    cleaned_columns = []
+    for col in df.columns:
+        # Step 1: Transliterate special characters (e.g., 'ó' -> 'o').
+        clean_col = unidecode(str(col))
+
+        # Step 2: Convert to lowercase and replace spaces/hyphens with underscores.
+        clean_col = clean_col.strip().lower().replace(" ", "_").replace("-", "_")
+
+        # Step 3: Remove any character that is not a letter, number, or underscore.
+        clean_col = re.sub(r"[^\w]", "", clean_col)
+
+        cleaned_columns.append(clean_col)
+
+    df.columns = cleaned_columns
     return df
 
 
 def convert_numeric_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
     """
     Converts specified columns to numeric, coercing errors to NaN.
-    It handles non-numeric characters like currency symbols.
     """
     for col in columns:
-        df[col] = pd.to_numeric(
-            df[col].astype(str).str.replace(r"[^0-9.-]", "", regex=True),
-            errors="coerce",
-        )
+        if col in df.columns:
+            df[col] = pd.to_numeric(
+                df[col].astype(str).str.replace(r"[^0-9.-]", "", regex=True),
+                errors="coerce",
+            )
     return df
 
 
 def standardize_date_column(df: pd.DataFrame, column: str) -> pd.DataFrame:
     """
     Converts a specified column to datetime objects, inferring the format.
-    Errors will be coerced to NaT (Not a Time).
     """
-    df[column] = pd.to_datetime(df[column], errors="coerce", format="mixed")
+    if column in df.columns:
+        df[column] = pd.to_datetime(df[column], errors="coerce", format="mixed")
     return df
 
 
@@ -42,29 +53,29 @@ def strip_string_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     Trims leading and trailing whitespace from all string/object columns.
     """
-    for col in df.select_dtypes(include=["object"]).columns:
-        df[col] = df[col].str.strip()
+    string_cols = df.select_dtypes(include=["object"]).columns
+    df[string_cols] = df[string_cols].apply(lambda x: x.str.strip())
     return df
 
 
 def resolve_sku_duplicates(df: pd.DataFrame) -> pd.DataFrame:
     """
     Removes duplicate records based on 'sku', keeping the one with the
-    most recent 'fecha_actualización'.
+    most recent 'fecha_actualizacion'.
     """
-    df_sorted = df.sort_values("fecha_actualización", ascending=False)
+    df_sorted = df.sort_values("fecha_actualizacion", ascending=False)
     df_deduplicated = df_sorted.drop_duplicates(subset="sku", keep="first")
     return df_deduplicated
 
 
 def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Applies a defined strategy for handling missing values:
-    - Fills 'categoria' with 'desconocida'.
-    - Drops rows where critical columns are null.
+    Applies a defined strategy for handling missing values.
     """
-    df["categoria"].fillna("desconocida", inplace=True)
-    critical_cols = ["precio_compra", "precio_venta", "fecha_actualización"]
+    # Fix for FutureWarning: use direct assignment instead of chained inplace
+    df["categoria"] = df["categoria"].fillna("desconocida")
+
+    critical_cols = ["precio_compra", "precio_venta", "fecha_actualizacion"]
     df.dropna(subset=critical_cols, inplace=True)
     return df
 
@@ -78,30 +89,33 @@ def run_cleaning_pipeline(df: pd.DataFrame) -> pd.DataFrame:
 
     df_clean = df.copy()
 
-    # 1. Clean column names
+    # Step 1: Clean all column names FIRST.
     df_clean = clean_column_names(df_clean)
     print("Step 1/6: Column names normalized.")
 
-    # 2. Convert numeric columns
-    numeric_cols = ["precio_venta", "margen"]
-    df_clean = convert_numeric_columns(df_clean, numeric_cols)
-    print(f"Step 2/6: Converted columns to numeric: {numeric_cols}.")
+    # --- Define the cleaned column names we expect to work with ---
+    numeric_cols_to_process = ["precio_venta", "margen"]
+    date_col_to_process = "fecha_actualizacion"
 
-    # 3. Convert date column
-    df_clean = standardize_date_column(df_clean, "fecha_actualización")
-    print("Step 3/6: Standardized date column 'fecha_actualización'.")
+    # Step 2: Convert numeric columns
+    df_clean = convert_numeric_columns(df_clean, numeric_cols_to_process)
+    print(f"Step 2/6: Converted columns to numeric: {numeric_cols_to_process}.")
 
-    # 4. Clean text columns
+    # Step 3: Convert date column
+    df_clean = standardize_date_column(df_clean, date_col_to_process)
+    print(f"Step 3/6: Standardized date column '{date_col_to_process}'.")
+
+    # Step 4: Clean text columns
     df_clean = strip_string_columns(df_clean)
     print("Step 4/6: Stripped whitespace from string columns.")
 
-    # 5. Handle SKU duplicates
+    # Step 5: Handle SKU duplicates
     initial_rows = len(df_clean)
     df_clean = resolve_sku_duplicates(df_clean)
     rows_removed = initial_rows - len(df_clean)
     print(f"Step 5/6: Resolved SKU duplicates. Removed {rows_removed} rows.")
 
-    # 6. Handle missing values
+    # Step 6: Handle missing values
     initial_rows = len(df_clean)
     df_clean = handle_missing_values(df_clean)
     rows_removed = initial_rows - len(df_clean)
