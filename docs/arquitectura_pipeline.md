@@ -9,70 +9,34 @@ Se utiliza el siguiente stack disponible para implementar el pipeline **ELT (Ext
 **Flujo de Datos:**
 
 ```mermaid
-graph LR
-    %% Define styles for different component types
-    classDef orchestrator fill:#fffbe6,stroke:#ffc107,stroke-width:2px;
-    classDef source fill:#e3f2fd,stroke:#2196f3,stroke-width:2px;
-    classDef platform fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px;
-    classDef bi fill:#e8f5e9,stroke:#4caf50,stroke-width:2px;
-    classDef tool fill:#eceff1,stroke:#607d8b,stroke-width:1.5px,stroke-dasharray: 5 5;
+graph TD
+    A[(MySQL Database)] -->|Extract| C{Airbyte}
+    B((Airflow)) -.->|Schedule| C
+    B -.->|Trigger| H
 
-    %% Main Orchestrator (Control Plane)
-    subgraph "Plano de Orquestación"
-        Airflow("💨 Airflow")
-    end
+    C -->|Backup| D[Data Lake Bronze Layer Parquet Files]
+    C -->|Load Raw| E[(ClickHouse Data Warehouse)]
 
-    %% Data Plane
-    subgraph "Plano de Datos"
-        direction LR
+    E -->|Read Raw| H((dbt))
+    H -->|Transform| F[Silver Layer Clean Data]
+    F -->|Aggregate| G[Gold Layer Business Ready]
 
-        subgraph "1. Sistema Fuente"
-            MySQL("🗄️ MySQL")
-        end
+    H -.->|Monitor| I((Elementary))
+    I -->|Alert| B
 
-        subgraph "2. Plataforma Analítica"
-            subgraph "Data Lake (Backup)"
-                BronzeLake["💾<br>Capa Bronze<br>(Parquet)"]
-            end
-            subgraph "Data Warehouse (ClickHouse)"
-                RawWH["📥<br>Datos Crudos"] --> SilverWH["✨<br>Capa Silver<br>(Limpios)"] --> GoldWH["🏆<br>Capa Gold<br>(Agregados)"]
-            end
-        end
+    G -->|Query| J[Business Intelligence Metabase Superset]
 
-        subgraph "3. Consumo de Datos"
-            BI["📊 Metabase / Superset"]
-        end
-    end
+    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:3px
+    classDef storage fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px
+    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:3px
+    classDef orchestration fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    classDef output fill:#fce4ec,stroke:#c2185b,stroke-width:3px
 
-    %% Tooling Layer (as enablers of the flow)
-    Airbyte("🔄 Airbyte")
-    DBT("⚙️ dbt")
-    Elementary("✔️ Elementary")
-
-    %% Define Data Flow
-    MySQL -- "Carga de datos" --> Airbyte
-    Airbyte -- "Destino 1" --> BronzeLake
-    Airbyte -- "Destino 2" --> RawWH
-    SilverWH -- "Transformación" --> DBT
-    DBT -- "Crea/Actualiza modelos" --> GoldWH
-    GoldWH -- "Consultas de BI" --> BI
-
-    %% Define Control Flow (Orchestration & Monitoring)
-    Airflow -.-> Airbyte
-    Airflow -.-> DBT
-    DBT -. "Ejecuta tests" .-> Elementary
-    Elementary -. "Reporta estado" .-> Airflow
-
-    %% Apply styles
-    class Airflow orchestrator;
-    class MySQL source;
-    class BronzeLake,RawWH,SilverWH,GoldWH platform;
-    class BI bi;
-    class Airbyte,DBT,Elementary tool;
-
-    %% Style links
-    linkStyle 1,2,3,4,5 stroke-width:2px,fill:none,stroke:#333;
-    linkStyle 6,7,8,9 stroke-width:2px,fill:none,stroke:#ff9800,stroke-dasharray: 4 4;
+    class A source
+    class D,E,F,G storage
+    class C,H,I process
+    class B orchestration
+    class J output
 ```
 
 **Etapas del Pipeline**
