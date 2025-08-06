@@ -1,18 +1,16 @@
-# Análisis y Limpieza de Datos de Rentabilidad
+# Prototipo de Limpieza de Datos para Pipeline ELT
 
-Este proyecto contiene un análisis exploratorio y un pipeline de limpieza de datos para un conjunto de datos de rentabilidad de productos. El objetivo es transformar datos crudos con problemas de calidad en un conjunto de datos limpio, validado y listo para el análisis o para ser cargado en un data warehouse.
+Este repositorio contiene el trabajo de **análisis exploratorio y prototipado** para la lógica de limpieza de datos de rentabilidad de productos. El código y los notebooks aquí presentes sirven como la **prueba de concepto (PoC)** para la etapa de Transformación (T) de un pipeline de datos ELT de producción.
 
-Este proyecto utiliza `pre-commit` para garantizar la calidad y el estilo del código, y `pip-tools` para un manejo de dependencias robusto y reproducible.
+El diseño completo de la arquitectura de producción, las decisiones técnicas y las consideraciones operativas se encuentran detalladas en `docs/arquitectura_pipeline.md`.
 
-## Lógica de Limpieza Aplicada
+## Propósito del Repositorio
 
-El pipeline de limpieza implementado en `src/data_cleaner.py` realiza las siguientes transformaciones clave:
+El objetivo principal de este proyecto no es ser una aplicación final, sino servir como:
 
--   **Normalización de Nombres de Columnas:** Convierte los nombres a un formato estándar de Python (minúsculas, con guiones bajos, sin caracteres especiales).
--   **Conversión de Tipos de Datos:** Asegura que las columnas numéricas (como `precio_venta`) y de fecha estén en su formato correcto (`float`, `datetime`).
--   **Registros Duplicados:** Elimina SKUs duplicados, conservando el registro con la fecha de actualización más reciente.
--   **Manejo de Valores Nulos:** Imputa valores faltantes en columnas categóricas y elimina filas donde datos críticos (como precios o fechas) son nulos.
--   **Limpieza de Texto:** Elimina espacios en blanco innecesarios en todas las columnas de texto.
+1.  **Fase de Exploración:** Identificar y documentar problemas de calidad en una muestra de datos crudos.
+2.  **Fase de Prototipado:** Desarrollar y validar la lógica de limpieza en un entorno controlado (Jupyter Notebook y Python modular).
+3.  **Fuente de Verdad para la Implementación:** El código en `src/data_cleaner.py` y las conclusiones del notebook son el blueprint que informará la creación de los modelos de transformación (`dbt`) en el pipeline de producción.
 
 ## Estructura del Proyecto
 
@@ -23,27 +21,25 @@ analisis_rentabilidad/
 ├── .gitignore
 ├── .pre-commit-config.yaml # Configuración para los hooks de pre-commit
 ├── data/
-│   └── rentabilidad_productos.csv # Archivo de datos de entrada
+│   └── rentabilidad_productos.csv
+├── docs/
+│   ├── arquitectura_pipeline.md   # Documento de diseño del pipeline de producción
+│   └── queries_optimizadas.sql    # Ejemplos de queries SQL para análisis
 ├── notebooks/
-│   └── analisis_y_limpieza.ipynb  # Notebook para exploración y orquestación
+│   └── analisis_y_limpieza.ipynb  # Notebook con el análisis y la validación del prototipo
 ├── src/
-│   └── data_cleaner.py          # Módulo Python con la lógica de limpieza
+│   └── data_cleaner.py          # Módulo Python con la lógica de limpieza prototipada
 ├── requirements.in              # Dependencias de la aplicación
 ├── dev-requirements.in          # Dependencias de desarrollo
 ├── requirements.txt             # Generado por pip-compile
 └── README.md
 ```
--   **`src/`**: Contiene el código fuente modular y reutilizable, principalmente el pipeline de limpieza.
--   **`notebooks/`**: Contiene los Jupyter Notebooks utilizados para el análisis exploratorio, la visualización y la narración del proceso.
--   **`data/`**: Destinado a contener los datos de entrada crudos y los datos de salida procesados.
+-   **`docs/`**: Contiene la visión estratégica y el diseño de la solución final. **Es el documento más importante para entender el contexto general.**
+-   **`src/` y `notebooks/`**: Contienen la implementación práctica del prototipo que valida la lógica a aplicar en la arquitectura descrita en `docs/`.
 
-## Resultado (Output)
+## Cómo Ejecutar el Prototipo
 
-Al ejecutar el notebook `analisis_y_limpieza.ipynb`, se genera el siguiente archivo:
-
--   **`data/rentabilidad_productos_limpio.parquet`**: Un archivo en formato Parquet que contiene los datos limpios y validados, listo para ser consumido por herramientas de BI o cargado en un data warehouse.
-
-## Setup y Ejecución
+Las siguientes instrucciones permiten replicar el entorno de análisis para validar o extender la lógica de limpieza.
 
 ### 1. Prerrequisitos
 - Python 3.8+
@@ -59,8 +55,6 @@ cd analisis_rentabilidad
 Asegúrese de colocar el archivo de datos `rentabilidad_productos.csv` dentro del directorio `data/`.
 
 ### 4. Configurar el Entorno Virtual y Dependencias
-Se recomienda encarecidamente usar un entorno virtual.
-
 ```bash
 # Crear y activar el entorno virtual
 python -m venv venv
