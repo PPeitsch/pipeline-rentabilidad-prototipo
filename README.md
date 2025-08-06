@@ -19,12 +19,13 @@ El repositorio está organizado de la siguiente manera para mantener una clara s
 ```
 analisis_rentabilidad/
 ├── .gitignore
-├── .pre-commit-config.yaml # Configuración para los hooks de pre-commit
+├── .pre-commit-config.yaml
 ├── data/
 │   └── rentabilidad_productos.csv
 ├── docs/
-│   ├── arquitectura_pipeline.md   # Documento de diseño del pipeline de producción
-│   └── queries_optimizadas.sql    # Ejemplos de queries SQL para análisis
+│   ├── arquitectura_pipeline.md   # Diseño del pipeline de producción
+│   ├── queries_originales.sql     # Ejemplos de queries sin optimizar
+│   └── queries_optimizadas.sql    # Ejemplos de queries optimizadas
 ├── notebooks/
 │   └── analisis_y_limpieza.ipynb  # Notebook con el análisis y la validación del prototipo
 ├── src/
@@ -63,11 +64,9 @@ source venv/bin/activate  # En Windows: venv\Scripts\activate
 # Instalar pip-tools para manejar dependencias
 pip install pip-tools
 
-# Compilar e instalar dependencias de desarrollo y de aplicación
+# Compilar e instalar todas las dependencias (desarrollo y aplicación)
 pip-compile dev-requirements.in -o dev-requirements.txt
-pip-compile requirements.in -o requirements.txt
 pip install -r dev-requirements.txt
-pip install -r requirements.txt
 ```
 
 ### 5. Configurar `pre-commit`
