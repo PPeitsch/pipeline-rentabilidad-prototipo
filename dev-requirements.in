@@ -1,2 +1,6 @@
+# Development tools
 pip-tools
 pre-commit
+
+# Include application requirements
+-r requirements.in
